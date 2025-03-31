@@ -105,20 +105,6 @@ int main(void)
 								curr_pwm -= step;
 						}
 				}
-			
-			/*
-				if(curr_adc < need_adc && curr_pwm <= (1023 - pwm_vl))
-				{
-					curr_pwm += pwm_vl;
-					set_pwm(curr_pwm);
-				}
-
-				if(curr_adc > need_adc && curr_pwm > pwm_vl)
-				{
-					curr_pwm -= pwm_vl;
-					set_pwm(curr_pwm);
-				}
-				*/
 
 				//Delay
 				for(i = 0; i < 0x6F; i++);
