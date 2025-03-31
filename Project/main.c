@@ -6,13 +6,19 @@
 #include "pwm.h"
 
 
-unsigned int curr_pwm = 0, curr_adc;
-volatile unsigned int  vltg = 0, need_adc = 0;
+//Private variables
+volatile int curr_pwm = 0;
+volatile unsigned int  vltg = 500, need_adc = 0, curr_adc;
 volatile unsigned char exchange[5];
 volatile unsigned char rx_counter = 0, adc_del = 1, pwm_vl = 1;
 
 long i;
 
+
+//Private prototypes
+static int proportion(int);
+
+//Interrupt routine
 void uart0 (void) interrupt 4 using 1  
 {
     if(RI == 1)
@@ -74,31 +80,59 @@ int main(void)
     
     while(1)
     {
-      curr_adc = read_adc(3);
-       /*
-        usart_sendString("Need ADC: ");
-        print_int(need_adc, 1);
-        usart_sendString("Current ADC: ");
-        print_int(curr_adc, 1);
-        usart_sendString("Set voltage: ");
-        print_int(vltg, 1);        
-      */
- 
-      if(curr_adc < need_adc && curr_pwm <= (1023 - pwm_vl))
-	  {
-		  curr_pwm += pwm_vl;
-		  set_pwm(curr_pwm);
-	  }
+			
+				curr_adc = read_adc(3);
+				
+				//If voltage less needed
+				if(curr_adc < need_adc)
+				{
+						int step = proportion(need_adc - curr_adc);
+					
+						if((curr_pwm + step) <= 1023) 
+						{
+								set_pwm(curr_pwm + step);
+								curr_pwm += step;
+						}
+				}
+				//If voltage more needed
+				if(curr_adc > need_adc)
+				{
+						int step = proportion(curr_adc - need_adc);
+					
+						if((curr_pwm - step) >= 0)  
+						{
+								set_pwm(curr_pwm - step);
+								curr_pwm -= step;
+						}
+				}
+			
+			/*
+				if(curr_adc < need_adc && curr_pwm <= (1023 - pwm_vl))
+				{
+					curr_pwm += pwm_vl;
+					set_pwm(curr_pwm);
+				}
 
-	  if(curr_adc > need_adc && curr_pwm > pwm_vl)
-	  {
-		  curr_pwm -= pwm_vl;
-		  set_pwm(curr_pwm);
-	  }
+				if(curr_adc > need_adc && curr_pwm > pwm_vl)
+				{
+					curr_pwm -= pwm_vl;
+					set_pwm(curr_pwm);
+				}
+				*/
 
-      for(i = 0; i < 0x6F; i++);
+				//Delay
+				for(i = 0; i < 0x6F; i++);
     }
     
 }
 
+static int proportion(int raznitca)
+{
+		if(raznitca < 10) return 1;
+		else if(raznitca < 30 && raznitca >= 10) return 2;
+		else if(raznitca < 150 && raznitca >= 30) return 3;
+		else if(raznitca < 500 && raznitca >= 150) return 5;
+		else return 10;
+		
+}
 
